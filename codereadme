@@ -270,7 +270,7 @@
             @Override
             public void onConfigure(SQLiteDatabase db) {
                 super.onConfigure(db);
-                db.execSQL("PRAGMA "+Database.DB_NAME+" = 'miserp@123'");
+                db.execSQL("PRAGMA "+Database.DB_NAME+" = 'password'");
             }
 
             @Override
@@ -371,7 +371,7 @@
     }
 
     public class AppConsts {
-        public static final String BASE_URL = "http://192.168.1.100/api_new/v1/api/";
+        public static final String BASE_URL = "api url";
     }
 
 
