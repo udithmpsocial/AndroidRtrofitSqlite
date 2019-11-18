@@ -1,0 +1,394 @@
+**Steps Here(These codes are actually running cades, the project I have done),** 
+
+ 1. define Gradle dependencies in android.
+ 2. Create Insert / Update Forms.
+ 3. Create ListView with a custom search. 
+ 5. Add classes for SQLite DB configurations. 
+ 6. Add a Retrofit class for API configurations and calls.
+
+**this is not a question, full complete answer if anyone looking for Android/Retrofit/SQLite**
+
+
+
+
+
+1 - define Gradle,
+
+        compile 'com.squareup.retrofit2:retrofit:2.0.2'
+        compile 'com.squareup.retrofit2:retrofit:2.4.0'
+        compile 'com.squareup.retrofit2:converter-gson:2.0.2'
+        compile 'com.squareup.okhttp3:logging-interceptor:3.4.1'
+        compile 'com.squareup.retrofit2:converter-gson:2.1.0'
+        compile 'com.google.code.gson:gson:2.6.1'
+
+
+
+2 - Create Insert / View Forms Initialitation( Here have mandetory defenitions ).
+
+        GrnModel s = new GrnModel();
+        new DBAdapter(GrnActivity.this).insertGrn(s);
+
+
+        //init list
+        ListView listView;
+        GrnListViewAdapter grnListViewAdapter;
+        ArrayList<GrnModel> approvalaodel=new DBAdapter(getApplicationContext()).selectGrn();
+        listView = (ListView) findViewById(R.id.grnListView);
+        grnListViewAdapter = new GrnListViewAdapter(getApplicationContext(), R.layout.grn_approval_row, approvalaodel);
+        listView.setAdapter(grnListViewAdapter);
+
+
+        // filetr list
+        listView.setAdapter(null);
+        listView.setAdapter(cusAdaptor);
+        cusAdaptor.getFilter().filter(charSequence.toString());
+        if(cusAdaptor.getCount() == 0){
+        Toast.makeText(getApplicationContext(),"No Found Customers",Toast.LENGTH_SHORT).show();
+        }
+        listView.setAdapter(cusAdaptor);
+
+
+        // api sync
+        Call<CustomerListResponse> call = CallManager.INSTANCE.getCustomerListCaller().getCustomerList();
+        call.enqueue(new Callback<CustomerListResponse>() {
+        @Override
+        public void onResponse(retrofit2.Call<CustomerListResponse> call, Response<CustomerListResponse> response) {
+
+                if (response.code() == 200) {
+                CustomerListResponse dto = response.body();
+                for(CustomerListApiModel model : dto.getCustomerlist()) {
+
+                }
+        @Override
+        public void onFailure(retrofit2.Call<CustomerListResponse> call, Throwable t) {
+
+                Toast.makeText(getApplicationContext(), "failed", Toast.LENGTH_LONG);
+                }
+        });
+
+
+
+3 - init listview adapter
+
+
+
+
+        public class CustomerListFilterAdaptor extends BaseAdapter {
+
+            private final Context context;
+            List<CustomerListModel> customerListModels;
+            TextView cusNameTxt;
+
+
+            public CustomerListFilterAdaptor(Context context) {
+                this.context = context;
+                customerListModels = new DBAdapter(context).selectCustomerList();
+            }
+
+            @Override
+            public int getCount() {
+                return customerListModels.size();
+            }
+
+            @Override
+            public Object getItem(int position) {
+                return customerListModels.get(position);
+            }
+
+            @Override
+            public long getItemId(int position) {
+                return Long.parseLong(customerListModels.get(position).getId());
+            }
+
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                convertView = ((Activity)context).getLayoutInflater().inflate(R.layout.activity_customer_row, null);
+                CustomerListModel model =  customerListModels.get(position);
+                cusNameTxt = (TextView) convertView.findViewById(R.id.cusrowNameTxt);
+
+                cusNameTxt.setText(model.getName());
+
+                return convertView;
+            }
+
+            @Nullable
+            @Override
+            public CharSequence[] getAutofillOptions() {
+                return new CharSequence[0];
+            }
+
+
+            // Item Search added by UDITH 26-01-2018
+            private List<CustomerListModel> mOriginalValues;
+            public Filter getFilter(){
+                return new Filter() {
+                    @Override
+                    protected FilterResults performFiltering(CharSequence charSequence) {
+                        FilterResults result = new FilterResults();
+                        List<CustomerListModel> FilteredArrList = new ArrayList<>();
+                        if(mOriginalValues == null){
+                            mOriginalValues = new ArrayList<>(customerListModels);
+                        }
+                        if(charSequence == null || charSequence.length() == 0){
+                            result.count = mOriginalValues.size();
+                            result.values = mOriginalValues;
+                        }else{
+                            charSequence = charSequence.toString();
+                            for(int i = 0; i<mOriginalValues.size(); i++){
+                                Log.i("ItemFilterTag"+i,"Item Filter :"+ mOriginalValues.get(i).getName());
+                                String data = mOriginalValues.get(i).getName().toUpperCase();
+                                if(data.contains(charSequence.toString())){
+                                    FilteredArrList.add(mOriginalValues.get(i));
+                                }
+                            }
+                            result.count = FilteredArrList.size();
+                            result.values =  FilteredArrList;
+                        }
+                        return result;
+                    }
+                    @Override
+                    protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
+                        customerListModels = (List<CustomerListModel>) filterResults.values;
+                        notifyDataSetChanged();
+                    }
+                };
+            }
+            // Item Search added by UDITH 26-01-2018
+        }
+
+	
+
+4 - define class for db hadle
+
+
+        public class Database {
+
+            public static final String DB_NAME="erpspace_payment";
+            public static final int DB_VERSION=4;
+
+            //CUSTOMER_SAVE1_TABLE Table sql manupulations - DB V1
+            public static final String CUSTOMER_SAVE1_TABLE="customer_save1";
+            public static final  String CUSTOMER_ID1 = "id1";
+            public static final  String CUSTOMER_ID2 = "id2";
+            public static final  String CUSTOMER_TILE = "title";
+            public static final  String CUSTOMER_NAME = "name";
+            public static final  String CUSTOMER_NIC = "nic";
+
+            public static final String CUSTOMER__SAVE1="CREATE TABLE `customer_save1` (\n" +
+                    "\t`id1`\tINTEGER PRIMARY KEY AUTOINCREMENT,\n" +
+                    "\t`id2`\tTEXT,\n" +
+                    "\t`title`\tTEXT,\n" +
+                    "\t`name`\tTEXT,\n" +
+                    "\t`nic`\tTEXT,\n" +
+                    ");";
+            public static final String DROP_CUSTOMER_SAVE1="DROP TABLE IF EXISTS "+CUSTOMER_SAVE1_TABLE;
+
+
+        }
+
+
+
+        public class DBAdapter {
+
+            Context c;
+            SQLiteDatabase db;
+            DBHelper helper;
+
+
+            public DBAdapter(Context c) {
+                this.c = c;
+                helper = new DBHelper(c);
+            }
+
+
+            //CUSTOMER LOG Table sql manupulations
+            public boolean insertCustomerList(CustomerListModel trModel) {
+                try {
+                    db = helper.getWritableDatabase();
+                    ContentValues cv = new ContentValues();
+                    cv.put(Database.CUSTOMER_ID2, trModel.getId());
+                    cv.put(Database.CUSTOMER_TILE, trModel.getTitle());
+
+                    long result = db.insert(Database.CUSTOMER_SAVE1_TABLE, Database.CUSTOMER_ID1, cv);
+                    if (result > 0) {
+                        return true;
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                } finally {
+                    helper.close();
+                }
+                return false;
+            }
+
+            public ArrayList<CustomerListModel> selectCustomerList() {
+                ArrayList<CustomerListModel> customerListModels = new ArrayList<>();
+                String[] columns = {
+                        Database.CUSTOMER_ID1,
+                        Database.CUSTOMER_TILE
+                };
+                try {
+                    db = helper.getWritableDatabase();
+                    Cursor c = db.query(Database.CUSTOMER_SAVE1_TABLE, columns, null, null, null, null, null);
+                    CustomerListModel s;
+                    if (c != null) {
+                        while (c.moveToNext()) {
+                            String id = c.getString(0);
+                            String title = c.getString(1);
+                            s = new CustomerListModel();
+                            s.setId(id);
+                            s.setTitle(title);
+                            customerListModels.add(s);
+                        }
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                return customerListModels;
+            }
+
+            public int deleteCustomerList(String id) {
+                int result = 0;
+                try {
+                    db = helper.getWritableDatabase();
+                    result = db.delete(Database.CUSTOMER_SAVE1_TABLE, Database.CUSTOMER_ID2 + "=?", new String[]{id});
+                    Log.d(AppConsts.QB_SYNC_LOG, "Delete TRN : " + result);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                } finally {
+                    helper.close();
+                }
+                return result;
+            }
+        }
+
+        public class DBHelper extends SQLiteOpenHelper {
+            public DBHelper(Context context) {
+                super(context, Database.DB_NAME, null, Database.DB_VERSION);
+            }
+
+            @Override
+            public void onConfigure(SQLiteDatabase db) {
+                super.onConfigure(db);
+                db.execSQL("PRAGMA "+Database.DB_NAME+" = 'miserp@123'");
+            }
+
+            @Override
+            public void onCreate(SQLiteDatabase db) {
+                try
+                {
+                    // CUSTOMERLIST_SAVE1_TABLE Table sql manupulations
+                    db.execSQL(Database.CUSTOMER__SAVE1);
+                }catch (SQLException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onUpgrade(SQLiteDatabase db, int i, int i1) {
+                try {
+
+                    // CUSTOMERLIST_SAVE1_TABLE Table sql manupulations
+                    db.execSQL(Database.DROP_CUSTOMER_SAVE1);
+                    db.execSQL(Database.CUSTOMER__SAVE1);
+                }catch (SQLException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+
+
+5 - Define api calls
+
+    public interface CustomerListCaller {
+        @POST("customers")
+        Call<CustomerListResponse> getCustomerList();
+
+    }
+
+    public class CustomerListResponse {
+        private List<CustomerListApiModel> customerlist = null;
+        public CustomerListResponse() {}
+        public List<CustomerListApiModel> getCustomerlist() {
+            return customerlist;
+        }
+
+        public void setCustomerlist(List<CustomerListApiModel> customerlist) {
+            this.customerlist = customerlist;
+        }
+    }
+
+    public enum CallManager {
+
+        INSTANCE;
+        private Retrofit retrofit;
+
+        private CallManager() {
+            OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+            httpClient.addNetworkInterceptor(new AuthTokenInterceptor());
+
+            retrofit = new Retrofit.Builder()
+                    .baseUrl(AppConsts.BASE_URL)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .client(httpClient.build())
+                    .build();
+        }
+
+        public CustomerListCaller getCustomerListCaller() {return retrofit.create(CustomerListCaller.class);}
+    }
+
+    public class AuthTokenInterceptor implements Interceptor {
+        @Override
+        public Response intercept(Chain chain) throws IOException {
+            Request.Builder builder = chain.request().newBuilder();
+            builder.addHeader(AppConsts.API_KEY, Store.INSTANCE.getToken());
+            return chain.proceed(builder.build());
+        }
+    }
+
+
+    public enum Store {
+        INSTANCE;
+        private String token = "";
+
+        private Store() {
+        }
+
+        public String getToken() {
+            return token;
+        }
+
+        public void setToken(String token) {
+            this.token = token;
+        }
+
+        public void setLog(StringBuilder log) {
+            this.log = log;
+        }
+    }
+
+    public class AppConsts {
+        public static final String BASE_URL = "http://192.168.1.100/api_new/v1/api/";
+    }
+
+
+    public class NetworkHelper {
+
+        public static boolean isNetworkAvailable(Context context) {
+            ConnectivityManager connectivityManager
+                    = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+            boolean result = activeNetworkInfo != null && activeNetworkInfo.isConnected();
+
+            return result;
+        }
+
+    }
+
+
+
+
+
