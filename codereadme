@@ -252,7 +252,7 @@
                 try {
                     db = helper.getWritableDatabase();
                     result = db.delete(Database.CUSTOMER_SAVE1_TABLE, Database.CUSTOMER_ID2 + "=?", new String[]{id});
-                    Log.d(AppConsts.QB_SYNC_LOG, "Delete TRN : " + result);
+                    Log.d(AppConsts._SYNC_LOG, "Delete TRN : " + result);
                 } catch (SQLException e) {
                     e.printStackTrace();
                 } finally {
