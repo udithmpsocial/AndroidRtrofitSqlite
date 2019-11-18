@@ -163,7 +163,7 @@
 
         public class Database {
 
-            public static final String DB_NAME="erpspace_payment";
+            public static final String DB_NAME="space_payment";
             public static final int DB_VERSION=4;
 
             //CUSTOMER_SAVE1_TABLE Table sql manupulations - DB V1
